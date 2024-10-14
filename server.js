@@ -68,20 +68,17 @@ server.listen(3001, () => {
 io.on('connection', (socket) => {
 
     socket.on('joinRooms', (rooms) => {
-        console.log(1111222222);
-        
         rooms.forEach(room => {
           socket.join(room);
           console.log(`User ${socket.id} joined room ${room}`);
         });
       });
       socket.on('sendMessage', (data) => {
-        console.log(1111111111);
+        const { roomId, message,user } = data;
+        console.log('data',data);
         
-        const { room, message,user } = data;
-        console.log(data);
-        
-        // io.to(room).emit('receiveMessage', message);
+        io.to(roomId).emit('receiveMessage', data);
+
       });
     
     socket.on('register', async (user) => {

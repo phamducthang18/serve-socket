@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const server = require('http').createServer(app);
+const CardUtils = require('./CardUtils');
 const io = require('socket.io')(server, {
     cors: {
         origin: "*",
@@ -56,11 +57,14 @@ redisSubscriber.on('pmessage', (pattern, channel, message) => {
 
 // Route test server
 app.get('/', (req, res) => {
+    const cardLinks = CardUtils.getCardImageLinks();
+    const cardInGame = CardUtils.getTenCard(4,10);
+    console.log(cardInGame);
     res.send('Socket.IO + Redis server is running!');
 });
 
 // Khởi động server
-server.listen(3001, () => {
+server.listen(3000, () => {
     console.log('Socket.IO server is running on port 3000');
 });
 
@@ -80,7 +84,24 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('receiveMessage', data);
 
       });
+      socket.on('joinRoomGame', (room) => {
+        socket.join(room);
+        
+        const roomSockets = io.sockets.adapter.rooms.get(room);
+        const numberOfUsers = roomSockets ? roomSockets.size : 0;
+        console.log(`User ${socket.id} joined room ${room}. Total users in room: ${numberOfUsers}`);
+        
     
+        io.to(room).emit('userCountUpdate', numberOfUsers);
+    });
+    socket.on('startGame', (data) => {
+       const {roomId} = data;
+
+       io.to(roomId).emit('startedGame',data);
+    });
+    socket.on('leaveRoomGame', (room) => {
+        socket.leave(room);
+    });
     socket.on('register', async (user) => {
         const userExists = onlineUsers.some(u => u.id === user.id);
         if (!userExists) {
